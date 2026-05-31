@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Mirror Mirror — Screenshot Generator</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background: #1a1a1a; font-family: -apple-system, sans-serif; padding: 40px 20px; }
+    h1 { color: #fff; font-size: 22px; margin-bottom: 32px; text-align: center; }
+    .screens { display: flex; gap: 32px; justify-content: center; flex-wrap: wrap; }
+    .screen { display: flex; flex-direction: column; align-items: center; gap: 16px; }
+    .screen h2 { color: #aaa; font-size: 14px; font-weight: 500; }
+    canvas { width: 215px; height: 466px; border-radius: 28px; box-shadow: 0 8px 40px rgba(0,0,0,0.6); }
+    button {
+      padding: 10px 20px; font-size: 13px; cursor: pointer;
+      border-radius: 8px; border: none; background: #C4632A; color: #fff;
+    }
+  </style>
+</head>
+<body>
+  <h1>Mirror Mirror On The Wall — Screenshot Generator</h1>
+  <div class="screens">
+    <div class="screen">
+      <h2>Screen 1 — Mirror</h2>
+      <canvas id="c1" width="1290" height="2796"></canvas>
+      <button onclick="dl('c1','screenshot-1-mirror.png')">Download PNG</button>
+    </div>
+    <div class="screen">
+      <h2>Screen 2 — Left Symmetry</h2>
+      <canvas id="c2" width="1290" height="2796"></canvas>
+      <button onclick="dl('c2','screenshot-2-left-symmetry.png')">Download PNG</button>
+    </div>
+    <div class="screen">
+      <h2>Screen 3 — Right Symmetry</h2>
+      <canvas id="c3" width="1290" height="2796"></canvas>
+      <button onclick="dl('c3','screenshot-3-right-symmetry.png')">Download PNG</button>
+    </div>
+  </div>
+
+  <script>
+    const W = 1290, H = 2796;
+    const TERRA  = '#C4632A';
+    const TAN    = '#D9AC83';
+    const DARK   = '#111111';
+    const DARKER = '#0a0a0a';
+
+    // ── Helpers ──────────────────────────────────────────────────────────────
+
+    function statusBar(ctx) {
+      ctx.fillStyle = 'rgba(255,255,255,0.9)';
+      ctx.font = `bold ${W*0.042}px -apple-system,sans-serif`;
+      ctx.textAlign = 'left';
+      ctx.fillText('9:41', W*0.07, W*0.118);
+
+      // Battery + signal on right
+      const rx = W*0.93, ry = W*0.075;
+      // Signal dots
+      for (let i = 0; i < 4; i++) {
+        ctx.fillStyle = 'rgba(255,255,255,0.85)';
+        ctx.fillRect(rx - 130 + i*22, ry - 4*(i+1), 14, 4*(i+1));
+      }
+      // WiFi arc (simplified)
+      ctx.strokeStyle = 'rgba(255,255,255,0.85)';
+      ctx.lineWidth = 6;
+      ctx.beginPath(); ctx.arc(rx - 46, ry + 4, 18, Math.PI*1.15, Math.PI*1.85); ctx.stroke();
+      ctx.beginPath(); ctx.arc(rx - 46, ry + 4, 10, Math.PI*1.15, Math.PI*1.85); ctx.stroke();
+      // Battery
+      ctx.strokeStyle = 'rgba(255,255,255,0.85)';
+      ctx.lineWidth = 4;
+      roundRect(ctx, rx - 8, ry - 12, 44, 22, 5);
+      ctx.stroke();
+      ctx.fillStyle = 'rgba(255,255,255,0.85)';
+      ctx.fillRect(rx + 37, ry - 5, 5, 8);
+      ctx.fillRect(rx - 4, ry - 8, 32, 14);
+    }
+
+    function roundRect(ctx, x, y, w, h, r) {
+      ctx.beginPath();
+      ctx.moveTo(x+r, y);
+      ctx.lineTo(x+w-r, y);
+      ctx.quadraticCurveTo(x+w, y, x+w, y+r);
+      ctx.lineTo(x+w, y+h-r);
+      ctx.quadraticCurveTo(x+w, y+h, x+w-r, y+h);
+      ctx.lineTo(x+r, y+h);
+      ctx.quadraticCurveTo(x, y+h, x, y+h-r);
+      ctx.lineTo(x, y+r);
+      ctx.quadraticCurveTo(x, y, x+r, y);
+      ctx.closePath();
+    }
+
+    function pill(ctx, text, cx, cy) {
+      ctx.font = `${W*0.03}px monospace`;
+      const tw = ctx.measureText(text).width;
+      const pw = tw + W*0.06, ph = W*0.055;
+      ctx.fillStyle = 'rgba(0,0,0,0.5)';
+      roundRect(ctx, cx - pw/2, cy - ph/2, pw, ph, ph/2);
+      ctx.fill();
+      ctx.fillStyle = 'rgba(255,255,255,0.75)';
+      ctx.textAlign = 'center';
+      ctx.fillText(text, cx, cy + W*0.011);
+    }
+
+    function circleBtn(ctx, cx, cy) {
+      const r = W*0.058;
+      ctx.fillStyle = 'rgba(0,0,0,0.45)';
+      ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI*2); ctx.fill();
+    }
+
+    function symmetryIcon(ctx, cx, cy) {
+      circleBtn(ctx, cx, cy);
+      const s = W*0.028;
+      ctx.strokeStyle = '#fff'; ctx.lineWidth = W*0.004; ctx.lineCap = 'round';
+      // vertical line
+      ctx.beginPath(); ctx.moveTo(cx, cy - s); ctx.lineTo(cx, cy + s); ctx.stroke();
+      // left arrow
+      ctx.beginPath(); ctx.moveTo(cx - W*0.005, cy); ctx.lineTo(cx - s, cy); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(cx - s + W*0.012, cy - W*0.012); ctx.lineTo(cx - s, cy); ctx.lineTo(cx - s + W*0.012, cy + W*0.012); ctx.stroke();
+      // right arrow
+      ctx.beginPath(); ctx.moveTo(cx + W*0.005, cy); ctx.lineTo(cx + s, cy); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(cx + s - W*0.012, cy - W*0.012); ctx.lineTo(cx + s, cy); ctx.lineTo(cx + s - W*0.012, cy + W*0.012); ctx.stroke();
+    }
+
+    function flipIcon(ctx, cx, cy) {
+      circleBtn(ctx, cx, cy);
+      const s = W*0.028;
+      ctx.strokeStyle = '#fff'; ctx.lineWidth = W*0.004; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+      ctx.beginPath();
+      ctx.moveTo(cx - s, cy - s*0.5);
+      ctx.bezierCurveTo(cx - s*0.3, cy - s*1.4, cx + s*0.3, cy - s*1.4, cx + s, cy - s*0.2);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(cx + s, cy + s*0.5);
+      ctx.bezierCurveTo(cx + s*0.3, cy + s*1.4, cx - s*0.3, cy + s*1.4, cx - s, cy + s*0.2);
+      ctx.stroke();
+      // arrow heads
+      ctx.beginPath(); ctx.moveTo(cx - s, cy - s*0.5); ctx.lineTo(cx - s - W*0.012, cy + W*0.01); ctx.lineTo(cx - s + W*0.014, cy + W*0.004); ctx.closePath(); ctx.fillStyle='#fff'; ctx.fill();
+      ctx.beginPath(); ctx.moveTo(cx + s, cy + s*0.5); ctx.lineTo(cx + s + W*0.012, cy - W*0.01); ctx.lineTo(cx + s - W*0.014, cy - W*0.004); ctx.closePath(); ctx.fill();
+    }
+
+    function headline(ctx, line1, line2, sub) {
+      ctx.textAlign = 'center';
+      ctx.fillStyle = '#ffffff';
+      ctx.font = `800 ${W*0.092}px -apple-system,sans-serif`;
+      ctx.fillText(line1, W/2, H*0.18);
+      if (line2) ctx.fillText(line2, W/2, H*0.27);
+      ctx.fillStyle = 'rgba(255,255,255,0.55)';
+      ctx.font = `${W*0.044}px -apple-system,sans-serif`;
+      ctx.fillText(sub, W/2, H*0.335);
+    }
+
+    function faceGlow(ctx, x, cx, cy, flip) {
+      // Warm oval glow simulating a face
+      const g = ctx.createRadialGradient(cx, cy, 20, cx, cy, W*0.38);
+      g.addColorStop(0, 'rgba(200,150,100,0.13)');
+      g.addColorStop(0.5, 'rgba(150,100,70,0.07)');
+      g.addColorStop(1, 'rgba(0,0,0,0)');
+      ctx.fillStyle = g;
+      ctx.fillRect(x, H*0.37, W*0.5 || W, H*0.56);
+
+      // head oval
+      ctx.strokeStyle = 'rgba(255,255,255,0.07)';
+      ctx.lineWidth = W*0.004;
+      ctx.beginPath();
+      ctx.ellipse(cx, cy, W*0.19, H*0.155, 0, 0, Math.PI*2);
+      ctx.stroke();
+    }
+
+    function bottomUI(ctx, mode) {
+      const btnY = H*0.921;
+      symmetryIcon(ctx, W*0.15, btnY);
+      flipIcon(ctx, W*0.85, btnY);
+      pill(ctx, 'Sat 31 May,  11:42 AM', W/2, H*0.972);
+    }
+
+    // ── Screen 1 — Normal mirror ────────────────────────────────────────────
+
+    function drawScreen1(ctx) {
+      // Background
+      const bg = ctx.createLinearGradient(0, 0, 0, H);
+      bg.addColorStop(0, '#0d0d0d');
+      bg.addColorStop(1, '#1a1209');
+      ctx.fillStyle = bg; ctx.fillRect(0, 0, W, H);
+
+      // face glow centred
+      faceGlow(ctx, 0, W/2, H*0.61, false);
+
+      statusBar(ctx);
+      headline(ctx, 'Mirror Mirror', 'On The Wall', 'Your perfect reflection, instantly');
+      bottomUI(ctx, 'none');
+    }
+
+    // ── Screen 2 — Left symmetry ────────────────────────────────────────────
+
+    function drawScreen2(ctx) {
+      const bg = ctx.createLinearGradient(0, 0, 0, H);
+      bg.addColorStop(0, '#0d0d0d');
+      bg.addColorStop(1, '#1a1209');
+      ctx.fillStyle = bg; ctx.fillRect(0, 0, W, H);
+
+      // Left half glow
+      faceGlow(ctx, 0, W*0.25, H*0.61, false);
+      // Right half — mirrored glow
+      faceGlow(ctx, W/2, W*0.75, H*0.61, true);
+
+      // Brand colour accent line at seam
+      const lg = ctx.createLinearGradient(W/2-2, 0, W/2+2, 0);
+      lg.addColorStop(0, 'rgba(196,99,42,0.0)');
+      lg.addColorStop(0.5, 'rgba(196,99,42,0.45)');
+      lg.addColorStop(1, 'rgba(196,99,42,0.0)');
+      ctx.fillStyle = lg;
+      ctx.fillRect(W/2 - 2, H*0.38, 4, H*0.52);
+
+      statusBar(ctx);
+      headline(ctx, 'Test Your', 'Symmetry', 'See both sides of your face');
+      bottomUI(ctx, 'left');
+    }
+
+    // ── Screen 3 — Right symmetry ───────────────────────────────────────────
+
+    function drawScreen3(ctx) {
+      const bg = ctx.createLinearGradient(0, 0, 0, H);
+      bg.addColorStop(0, '#0d0d0d');
+      bg.addColorStop(1, '#120d1a');
+      ctx.fillStyle = bg; ctx.fillRect(0, 0, W, H);
+
+      faceGlow(ctx, 0, W*0.25, H*0.61, true);
+      faceGlow(ctx, W/2, W*0.75, H*0.61, false);
+
+      const lg = ctx.createLinearGradient(W/2-2, 0, W/2+2, 0);
+      lg.addColorStop(0, 'rgba(217,172,131,0.0)');
+      lg.addColorStop(0.5, 'rgba(217,172,131,0.45)');
+      lg.addColorStop(1, 'rgba(217,172,131,0.0)');
+      ctx.fillStyle = lg;
+      ctx.fillRect(W/2 - 2, H*0.38, 4, H*0.52);
+
+      statusBar(ctx);
+      headline(ctx, 'Flip &', 'Compare', 'Left face or right? You decide');
+      bottomUI(ctx, 'right');
+    }
+
+    // ── Brand blocks (top-right corner decoration) ──────────────────────────
+
+    function brandBlocks(ctx) {
+      const s = W*0.055, gap = W*0.012, x = W*0.88, y = H*0.38;
+      ctx.fillStyle = TERRA; ctx.fillRect(x, y, s, s);
+      ctx.fillStyle = TAN;   ctx.fillRect(x, y + s + gap, s, s);
+    }
+
+    // ── Render all ──────────────────────────────────────────────────────────
+
+    ['c1','c2','c3'].forEach((id, i) => {
+      const canvas = document.getElementById(id);
+      const ctx = canvas.getContext('2d');
+      [drawScreen1, drawScreen2, drawScreen3][i](ctx);
+      brandBlocks(ctx);
+    });
+
+    function dl(id, name) {
+      const a = document.createElement('a');
+      a.download = name;
+      a.href = document.getElementById(id).toDataURL('image/png');
+      a.click();
+    }
+  </script>
+</body>
+</html>
