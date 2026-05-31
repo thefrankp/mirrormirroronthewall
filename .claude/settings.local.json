@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm install *)",
+      "Bash(npx playwright *)",
+      "Bash(mktemp -d)",
+      "Bash(TMPDIR=__TRACKED_VAR__ node -e ' *)"
+    ]
+  }
+}
