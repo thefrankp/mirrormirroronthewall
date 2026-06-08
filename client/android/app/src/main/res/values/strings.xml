@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Mirror Mirror On The Wall</string>
+    <string name="title_activity_main">Mirror Mirror On The Wall</string>
+    <string name="package_name">com.fptech.mirrormirroronthewall</string>
+    <string name="custom_url_scheme">com.fptech.mirrormirroronthewall</string>
+</resources>

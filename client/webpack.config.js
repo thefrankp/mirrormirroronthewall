@@ -1,5 +1,7 @@
 const path = require('path');
+const webpack = require('webpack');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
+require('dotenv').config();
 
 module.exports = {
   entry: './src/index.js',
@@ -27,6 +29,12 @@ module.exports = {
   plugins: [
     new HtmlWebpackPlugin({
       template: './public/index.html',
+    }),
+    // API_BASE_URL is baked into the bundle at build time.
+    // - Dev: leave empty — the proxy below forwards /api to the Express server.
+    // - Capacitor build: set to your deployed server, e.g. https://api.fptech.com.au
+    new webpack.DefinePlugin({
+      'process.env.API_BASE_URL': JSON.stringify(process.env.API_BASE_URL || ''),
     }),
   ],
   devServer: {

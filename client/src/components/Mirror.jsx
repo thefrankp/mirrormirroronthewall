@@ -31,7 +31,7 @@ export default function Mirror() {
   const videoRef = useRef(null);
   const video2Ref = useRef(null);
   const streamRef = useRef(null);
-  const [datetime, setDatetime] = useState(null);
+  const [datetime, setDatetime] = useState('---');
   const [mirrored, setMirrored] = useState(false);
   const [symmetryIndex, setSymmetryIndex] = useState(0);
 
@@ -60,10 +60,10 @@ export default function Mirror() {
 
   useEffect(() => {
     function fetchDatetime() {
-      fetch('/api/datetime')
+      fetch(`${process.env.API_BASE_URL || ''}/api/datetime`)
         .then((res) => res.json())
         .then((data) => setDatetime(data.datetime))
-        .catch((err) => console.error('Datetime fetch error:', err));
+        .catch(() => setDatetime('---'));
     }
     fetchDatetime();
     const interval = setInterval(fetchDatetime, 60_000);
@@ -111,8 +111,7 @@ export default function Mirror() {
         <FlipIcon />
       </button>
 
-      {datetime && (
-        <div style={{
+      <div style={{
           position: 'absolute',
           bottom: 0,
           left: 0,
@@ -126,9 +125,8 @@ export default function Mirror() {
           pointerEvents: 'none',
           zIndex: 3,
         }}>
-          {new Date(datetime).toLocaleString(undefined, { dateStyle: 'short', timeStyle: 'short' })}
+          UTC: {datetime === '---' ? '---' : new Date(datetime).toLocaleString(undefined, { dateStyle: 'short', timeStyle: 'short' })}
         </div>
-      )}
     </div>
   );
 }
